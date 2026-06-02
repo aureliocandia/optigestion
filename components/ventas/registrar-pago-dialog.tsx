@@ -132,7 +132,7 @@ export function RegistrarPagoDialog({
                   type="number"
                   min="1"
                   max={pendiente}
-                  step="1000"
+                  step="any"
                   placeholder={pendiente.toString()}
                   value={monto}
                   onChange={(e) => setMonto(e.target.value)}
