@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -16,12 +17,14 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { MoreHorizontal, Trash2, Pencil, ShoppingCart } from "lucide-react"
+import { MoreHorizontal, Trash2, Pencil, ShoppingCart, DollarSign } from "lucide-react"
 import { CompraDialog } from "./compra-dialog"
+import { RegistrarPagoCompraDialog } from "./registrar-pago-compra-dialog"
 import { toast } from "sonner"
 
 const estadoVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   pagado: "default",
+  parcial: "secondary",
   pendiente: "outline",
   cancelado: "destructive",
 }
@@ -29,6 +32,7 @@ const estadoVariant: Record<string, "default" | "secondary" | "destructive" | "o
 export function ComprasTable({ compras }: { compras: Compra[] }) {
   const [editingCompra, setEditingCompra] = useState<Compra | null>(null)
   const [deletingCompra, setDeletingCompra] = useState<Compra | null>(null)
+  const [payingCompra, setPayingCompra] = useState<Compra | null>(null)
   const [loadingDelete, setLoadingDelete] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -73,47 +77,69 @@ export function ComprasTable({ compras }: { compras: Compra[] }) {
               <TableHead>Proveedor</TableHead>
               <TableHead className="hidden md:table-cell">Descripción</TableHead>
               <TableHead>Monto</TableHead>
-              <TableHead className="hidden sm:table-cell">Fecha</TableHead>
+              <TableHead className="hidden sm:table-cell">Pagado</TableHead>
+              <TableHead className="hidden lg:table-cell">Progreso</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {compras.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell className="font-medium">{c.proveedor}</TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <p className="line-clamp-1 max-w-[200px]">{c.descripcion}</p>
-                </TableCell>
-                <TableCell className="font-medium">{fmt(c.monto)}</TableCell>
-                <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
-                  {new Date(c.fecha).toLocaleDateString("es-PY")}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={estadoVariant[c.estado]}>{c.estado}</Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Acciones</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingCompra(c)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setDeletingCompra(c)} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {compras.map((c) => {
+              const pct = c.monto > 0 ? Math.round((c.pagado / c.monto) * 100) : 0
+              return (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <p className="font-medium">{c.proveedor}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(c.fecha).toLocaleDateString("es-PY")}
+                    </p>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <p className="line-clamp-1 max-w-[200px]">{c.descripcion}</p>
+                  </TableCell>
+                  <TableCell className="font-medium">{fmt(c.monto)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <p className="text-sm text-emerald-600 font-medium">{fmt(c.pagado)}</p>
+                    {c.pagado < c.monto && (
+                      <p className="text-xs text-rose-500">Debe: {fmt(c.monto - c.pagado)}</p>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell w-32">
+                    <Progress value={pct} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-1">{pct}%</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={estadoVariant[c.estado]}>{c.estado}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Acciones</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {c.estado !== "pagado" && c.estado !== "cancelado" && (
+                          <DropdownMenuItem onClick={() => setPayingCompra(c)}>
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Registrar pago
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => setEditingCompra(c)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDeletingCompra(c)} className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
@@ -124,17 +150,29 @@ export function ComprasTable({ compras }: { compras: Compra[] }) {
         compra={editingCompra}
       />
 
+      <RegistrarPagoCompraDialog
+        open={!!payingCompra}
+        onOpenChange={(o) => !o && setPayingCompra(null)}
+        compra={payingCompra}
+      />
+
       <AlertDialog open={!!deletingCompra} onOpenChange={(o) => !o && setDeletingCompra(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar esta compra?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará la compra de <b>{deletingCompra?.proveedor}</b> por <b>{deletingCompra ? fmt(deletingCompra.monto) : ""}</b>.
+              Esta acción no se puede deshacer. Se eliminará la compra de{" "}
+              <b>{deletingCompra?.proveedor}</b> por{" "}
+              <b>{deletingCompra ? fmt(deletingCompra.monto) : ""}</b>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={loadingDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={loadingDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {loadingDelete ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
