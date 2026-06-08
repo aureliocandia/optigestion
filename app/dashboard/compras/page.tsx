@@ -50,6 +50,7 @@ async function ComprasContent({ search, estado }: { search: string; estado: stri
       (c) =>
         c.proveedor.toLowerCase().includes(s) ||
         c.descripcion.toLowerCase().includes(s)
+        (c.numero_factura || "").toLowerCase().includes(s)
     )
   }
 

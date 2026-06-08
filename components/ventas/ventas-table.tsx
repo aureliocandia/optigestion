@@ -3,20 +3,13 @@
 import { useState } from "react"
 import { Venta } from "@/lib/types"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Trash2, DollarSign, Eye, CreditCard } from "lucide-react"
 import { VentaDetailDialog } from "./venta-detail-dialog"
@@ -39,13 +32,10 @@ export function VentasTable({ ventas }: VentasTableProps) {
   const [deletingVenta, setDeletingVenta] = useState<typeof ventas[0] | null>(null)
   const [payingVenta, setPayingVenta] = useState<typeof ventas[0] | null>(null)
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-PY", {
-      style: "currency",
-      currency: "PYG",
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("es-PY", {
+      style: "currency", currency: "PYG", minimumFractionDigits: 0,
+    }).format(n)
 
   if (ventas.length === 0) {
     return (
@@ -54,9 +44,7 @@ export function VentasTable({ ventas }: VentasTableProps) {
           <CreditCard className="h-6 w-6 text-muted-foreground" />
         </div>
         <h3 className="mt-4 text-lg font-semibold">No hay ventas</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Comienza registrando tu primera venta
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Comienza registrando tu primera venta</p>
       </div>
     )
   }
@@ -68,18 +56,20 @@ export function VentasTable({ ventas }: VentasTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Cliente</TableHead>
-              <TableHead className="hidden md:table-cell">Descripcion</TableHead>
+              <TableHead className="hidden md:table-cell">Descripción</TableHead>
               <TableHead>Monto</TableHead>
               <TableHead className="hidden sm:table-cell">Pagado</TableHead>
+              <TableHead className="hidden lg:table-cell">Progreso</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ventas.map((venta) => (
-              <TableRow key={venta.id}>
-                <TableCell>
-                  <div>
+            {ventas.map((venta) => {
+              const pct = venta.monto > 0 ? Math.round((venta.pagado / venta.monto) * 100) : 0
+              return (
+                <TableRow key={venta.id}>
+                  <TableCell>
                     <p className="font-medium">
                       {venta.cliente
                         ? `${venta.cliente.nombre} ${venta.cliente.apellido}`
@@ -88,53 +78,56 @@ export function VentasTable({ ventas }: VentasTableProps) {
                     <p className="text-xs text-muted-foreground">
                       {new Date(venta.fecha).toLocaleDateString("es-PY")}
                     </p>
-                  </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <p className="line-clamp-1 max-w-[200px]">{venta.descripcion}</p>
-                </TableCell>
-                <TableCell className="font-medium">
-                  {formatCurrency(venta.monto)}
-                </TableCell>
-                <TableCell className="hidden sm:table-cell">
-                  {formatCurrency(venta.pagado)}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={estadoBadgeVariant[venta.estado]}>
-                    {venta.estado}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Acciones</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setViewingVenta(venta)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver detalle
-                      </DropdownMenuItem>
-                      {venta.estado !== "pagado" && venta.estado !== "cancelado" && (
-                        <DropdownMenuItem onClick={() => setPayingVenta(venta)}>
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Registrar pago
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <p className="line-clamp-1 max-w-[200px]">{venta.descripcion}</p>
+                  </TableCell>
+                  <TableCell className="font-medium">{fmt(venta.monto)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <p className="text-sm text-emerald-600 font-medium">{fmt(venta.pagado)}</p>
+                    {venta.pagado < venta.monto && (
+                      <p className="text-xs text-rose-500">Debe: {fmt(venta.monto - venta.pagado)}</p>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell w-32">
+                    <Progress value={pct} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-1">{pct}%</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={estadoBadgeVariant[venta.estado]}>{venta.estado}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Acciones</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setViewingVenta(venta)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Ver detalle
                         </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        onClick={() => setDeletingVenta(venta)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+                        {venta.estado !== "pagado" && venta.estado !== "cancelado" && (
+                          <DropdownMenuItem onClick={() => setPayingVenta(venta)}>
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Registrar pago
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => setDeletingVenta(venta)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
@@ -144,13 +137,11 @@ export function VentasTable({ ventas }: VentasTableProps) {
         onOpenChange={(open) => !open && setViewingVenta(null)}
         venta={viewingVenta}
       />
-
       <DeleteVentaDialog
         open={!!deletingVenta}
         onOpenChange={(open) => !open && setDeletingVenta(null)}
         venta={deletingVenta}
       />
-
       <RegistrarPagoDialog
         open={!!payingVenta}
         onOpenChange={(open) => !open && setPayingVenta(null)}

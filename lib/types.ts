@@ -64,16 +64,6 @@ export interface Compra {
   proveedor: string
   descripcion: string
   monto: number
-  estado: 'pendiente' | 'pagado' | 'cancelado'
-  fecha: string
-  created_at: string
-  updated_at: string
-}
-export interface Compra {
-  id: string
-  proveedor: string
-  descripcion: string
-  monto: number
   pagado: number        // ← nuevo
   tipo: 'contado' | 'credito'  // ← nuevo
   cuotas: number        // ← nuevo
@@ -81,4 +71,5 @@ export interface Compra {
   fecha: string
   created_at: string
   updated_at: string
+  numero_factura: string | null  // dentro de Compra
 }

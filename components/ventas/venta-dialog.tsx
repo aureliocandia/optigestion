@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -59,12 +60,12 @@ export function VentaDialog({ open, onOpenChange, clientes }: VentaDialogProps) 
     const q = busquedaCliente.toLowerCase()
     return clientes.filter((c) => {
       const nombreCompleto = `${c.nombre} ${c.apellido}`.toLowerCase()
-      const codigoCedula = c.cedula
-        ? `#${c.cedula.replace(/\D/g, "").slice(-3)}`
-        : ""
+      const ultimos3 = (c.cedula || "").replace(/\D/g, "").slice(-3)
+      const codigoCedula = ultimos3 ? `#${ultimos3}` : ""
       return (
         nombreCompleto.includes(q) ||
-        codigoCedula.toLowerCase().includes(q)
+        codigoCedula.toLowerCase().includes(q) ||
+        ultimos3.includes(q) // ✅ buscar "909" sin el #
       )
     })
   }, [clientes, busquedaCliente])

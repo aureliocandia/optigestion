@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -76,6 +77,7 @@ export function ComprasTable({ compras }: { compras: Compra[] }) {
             <TableRow>
               <TableHead>Proveedor</TableHead>
               <TableHead className="hidden md:table-cell">Descripción</TableHead>
+              <TableHead className="hidden md:table-cell">Factura</TableHead>
               <TableHead>Monto</TableHead>
               <TableHead className="hidden sm:table-cell">Pagado</TableHead>
               <TableHead className="hidden lg:table-cell">Progreso</TableHead>
@@ -95,7 +97,13 @@ export function ComprasTable({ compras }: { compras: Compra[] }) {
                     </p>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    <p className="line-clamp-1 max-w-[200px]">{c.descripcion}</p>
+                    <p className="line-clamp-1 max-w-[180px]">{c.descripcion}</p>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {c.numero_factura
+                      ? <span className="font-mono text-sm">{c.numero_factura}</span>
+                      : <span className="text-muted-foreground text-sm">—</span>
+                    }
                   </TableCell>
                   <TableCell className="font-medium">{fmt(c.monto)}</TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -130,7 +138,10 @@ export function ComprasTable({ compras }: { compras: Compra[] }) {
                           <Pencil className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingCompra(c)} className="text-destructive">
+                        <DropdownMenuItem
+                          onClick={() => setDeletingCompra(c)}
+                          className="text-destructive"
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Eliminar
                         </DropdownMenuItem>
