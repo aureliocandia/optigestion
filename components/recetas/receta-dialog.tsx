@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -15,19 +15,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Search } from "lucide-react"
 import { toast } from "sonner"
 
 interface ClienteOption {
   id: string
   nombre: string
   apellido: string
+  cedula?: string | null
 }
 
 interface RecetaDialogProps {
@@ -36,61 +31,61 @@ interface RecetaDialogProps {
   clientes: ClienteOption[]
 }
 
+const emptyForm = {
+  cliente_id: "",
+  esfera_od: "", cilindro_od: "", eje_od: "",
+  esfera_oi: "", cilindro_oi: "", eje_oi: "",
+  adicion: "", dp: "", observaciones: "",
+  fecha: new Date().toISOString().split("T")[0],
+}
+
 export function RecetaDialog({ open, onOpenChange, clientes }: RecetaDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [busqueda, setBusqueda] = useState("")
+  const [formData, setFormData] = useState(emptyForm)
   const router = useRouter()
   const supabase = createClient()
 
-  const [formData, setFormData] = useState({
-    cliente_id: "",
-    esfera_od: "",
-    cilindro_od: "",
-    eje_od: "",
-    esfera_oi: "",
-    cilindro_oi: "",
-    eje_oi: "",
-    adicion: "",
-    dp: "",
-    observaciones: "",
-    fecha: new Date().toISOString().split("T")[0],
-  })
+  const clientesFiltrados = useMemo(() => {
+    if (!busqueda.trim()) return clientes
+    const q = busqueda.toLowerCase()
+    return clientes.filter((c) => {
+      const nombre = `${c.nombre} ${c.apellido}`.toLowerCase()
+      const codigo = c.cedula ? `#${c.cedula.replace(/\D/g, "").slice(-3)}` : ""
+      return nombre.includes(q) || codigo.toLowerCase().includes(q)
+    })
+  }, [clientes, busqueda])
+
+  const clienteSeleccionado = clientes.find((c) => c.id === formData.cliente_id)
+
+  const handleClose = () => {
+    onOpenChange(false)
+    setBusqueda("")
+    setFormData(emptyForm)
+  }
+
+  const set = (k: string, v: string) => setFormData((f) => ({ ...f, [k]: v }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
       const { error } = await supabase.from("recetas").insert({
         cliente_id: formData.cliente_id,
-        esfera_od: formData.esfera_od ? parseFloat(formData.esfera_od) : null,
+        esfera_od:   formData.esfera_od   ? parseFloat(formData.esfera_od)   : null,
         cilindro_od: formData.cilindro_od ? parseFloat(formData.cilindro_od) : null,
-        eje_od: formData.eje_od ? parseInt(formData.eje_od) : null,
-        esfera_oi: formData.esfera_oi ? parseFloat(formData.esfera_oi) : null,
+        eje_od:      formData.eje_od      ? parseInt(formData.eje_od)        : null,
+        esfera_oi:   formData.esfera_oi   ? parseFloat(formData.esfera_oi)   : null,
         cilindro_oi: formData.cilindro_oi ? parseFloat(formData.cilindro_oi) : null,
-        eje_oi: formData.eje_oi ? parseInt(formData.eje_oi) : null,
-        adicion: formData.adicion ? parseFloat(formData.adicion) : null,
-        dp: formData.dp ? parseFloat(formData.dp) : null,
+        eje_oi:      formData.eje_oi      ? parseInt(formData.eje_oi)        : null,
+        adicion:     formData.adicion     ? parseFloat(formData.adicion)     : null,
+        dp:          formData.dp          ? parseFloat(formData.dp)          : null,
         observaciones: formData.observaciones || null,
         fecha: formData.fecha,
       })
-
       if (error) throw error
-
       toast.success("Receta creada correctamente")
-      onOpenChange(false)
-      setFormData({
-        cliente_id: "",
-        esfera_od: "",
-        cilindro_od: "",
-        eje_od: "",
-        esfera_oi: "",
-        cilindro_oi: "",
-        eje_oi: "",
-        adicion: "",
-        dp: "",
-        observaciones: "",
-        fecha: new Date().toISOString().split("T")[0],
-      })
+      handleClose()
       router.refresh()
     } catch (error: any) {
       toast.error(error.message || "Error al crear receta")
@@ -100,85 +95,85 @@ export function RecetaDialog({ open, onOpenChange, clientes }: RecetaDialogProps
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nueva Receta</DialogTitle>
-          <DialogDescription>
-            Registra una nueva receta optica para un cliente
-          </DialogDescription>
+          <DialogDescription>Registra una nueva receta óptica para un cliente</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="cliente">Cliente *</Label>
-              <Select
-                value={formData.cliente_id}
-                onValueChange={(value) => setFormData({ ...formData, cliente_id: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nombre} {cliente.apellido}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fecha">Fecha *</Label>
+
+          {/* Búsqueda de cliente — igual que venta-dialog */}
+          <div className="space-y-2">
+            <Label>Cliente *</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                id="fecha"
-                type="date"
-                value={formData.fecha}
-                onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
-                required
+                placeholder="Buscar por nombre o código (#890)..."
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value)
+                  setFormData((f) => ({ ...f, cliente_id: "" }))
+                }}
+                className="pl-9"
               />
             </div>
+            {busqueda && !formData.cliente_id && (
+              <div className="rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
+                {clientesFiltrados.length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground text-center">No se encontraron clientes</p>
+                ) : (
+                  clientesFiltrados.map((c) => {
+                    const codigo = c.cedula ? `#${c.cedula.replace(/\D/g, "").slice(-3)}` : ""
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent transition-colors text-left"
+                        onClick={() => {
+                          setFormData((f) => ({ ...f, cliente_id: c.id }))
+                          setBusqueda(`${c.nombre} ${c.apellido}`)
+                        }}
+                      >
+                        <span>{c.nombre} {c.apellido}</span>
+                        {codigo && (
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{codigo}</span>
+                        )}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            )}
+            {clienteSeleccionado && (
+              <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2 text-sm">
+                <span className="font-medium">{clienteSeleccionado.nombre} {clienteSeleccionado.apellido}</span>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => { setFormData((f) => ({ ...f, cliente_id: "" })); setBusqueda("") }}
+                >
+                  Cambiar
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="fecha">Fecha *</Label>
+            <Input id="fecha" type="date" value={formData.fecha} onChange={(e) => set("fecha", e.target.value)} required />
           </div>
 
           {/* Ojo Derecho */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Ojo Derecho (OD)</Label>
             <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label htmlFor="esfera_od" className="text-xs text-muted-foreground">Esfera</Label>
-                <Input
-                  id="esfera_od"
-                  type="number"
-                  step="0.25"
-                  placeholder="+0.00"
-                  value={formData.esfera_od}
-                  onChange={(e) => setFormData({ ...formData, esfera_od: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="cilindro_od" className="text-xs text-muted-foreground">Cilindro</Label>
-                <Input
-                  id="cilindro_od"
-                  type="number"
-                  step="0.25"
-                  placeholder="-0.00"
-                  value={formData.cilindro_od}
-                  onChange={(e) => setFormData({ ...formData, cilindro_od: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="eje_od" className="text-xs text-muted-foreground">Eje</Label>
-                <Input
-                  id="eje_od"
-                  type="number"
-                  min="0"
-                  max="180"
-                  placeholder="0-180"
-                  value={formData.eje_od}
-                  onChange={(e) => setFormData({ ...formData, eje_od: e.target.value })}
-                />
-              </div>
+              {[["esfera_od","Esfera","+0.00","0.25"],["cilindro_od","Cilindro","-0.00","0.25"],["eje_od","Eje","0-180","1"]].map(([k,l,ph,st])=>(
+                <div key={k}>
+                  <Label htmlFor={k} className="text-xs text-muted-foreground">{l}</Label>
+                  <Input id={k} type="number" step={st} placeholder={ph} value={(formData as any)[k]} onChange={(e)=>set(k,e.target.value)}/>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -186,87 +181,34 @@ export function RecetaDialog({ open, onOpenChange, clientes }: RecetaDialogProps
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Ojo Izquierdo (OI)</Label>
             <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label htmlFor="esfera_oi" className="text-xs text-muted-foreground">Esfera</Label>
-                <Input
-                  id="esfera_oi"
-                  type="number"
-                  step="0.25"
-                  placeholder="+0.00"
-                  value={formData.esfera_oi}
-                  onChange={(e) => setFormData({ ...formData, esfera_oi: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="cilindro_oi" className="text-xs text-muted-foreground">Cilindro</Label>
-                <Input
-                  id="cilindro_oi"
-                  type="number"
-                  step="0.25"
-                  placeholder="-0.00"
-                  value={formData.cilindro_oi}
-                  onChange={(e) => setFormData({ ...formData, cilindro_oi: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="eje_oi" className="text-xs text-muted-foreground">Eje</Label>
-                <Input
-                  id="eje_oi"
-                  type="number"
-                  min="0"
-                  max="180"
-                  placeholder="0-180"
-                  value={formData.eje_oi}
-                  onChange={(e) => setFormData({ ...formData, eje_oi: e.target.value })}
-                />
-              </div>
+              {[["esfera_oi","Esfera","+0.00","0.25"],["cilindro_oi","Cilindro","-0.00","0.25"],["eje_oi","Eje","0-180","1"]].map(([k,l,ph,st])=>(
+                <div key={k}>
+                  <Label htmlFor={k} className="text-xs text-muted-foreground">{l}</Label>
+                  <Input id={k} type="number" step={st} placeholder={ph} value={(formData as any)[k]} onChange={(e)=>set(k,e.target.value)}/>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Adicionales */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="adicion">Adicion (ADD)</Label>
-              <Input
-                id="adicion"
-                type="number"
-                step="0.25"
-                placeholder="+0.00"
-                value={formData.adicion}
-                onChange={(e) => setFormData({ ...formData, adicion: e.target.value })}
-              />
+              <Label htmlFor="adicion">Adición (ADD)</Label>
+              <Input id="adicion" type="number" step="0.25" placeholder="+0.00" value={formData.adicion} onChange={(e)=>set("adicion",e.target.value)}/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="dp">DP (mm)</Label>
-              <Input
-                id="dp"
-                type="number"
-                step="0.5"
-                placeholder="62.0"
-                value={formData.dp}
-                onChange={(e) => setFormData({ ...formData, dp: e.target.value })}
-              />
+              <Input id="dp" type="number" step="0.5" placeholder="62.0" value={formData.dp} onChange={(e)=>set("dp",e.target.value)}/>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="observaciones">Observaciones</Label>
-            <Textarea
-              id="observaciones"
-              placeholder="Notas adicionales..."
-              value={formData.observaciones}
-              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-              rows={2}
-            />
+            <Textarea id="observaciones" placeholder="Notas adicionales..." value={formData.observaciones} onChange={(e)=>set("observaciones",e.target.value)} rows={2}/>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading || !formData.cliente_id}>
-              {loading ? "Guardando..." : "Crear Receta"}
-            </Button>
+            <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
+            <Button type="submit" disabled={loading || !formData.cliente_id}>{loading ? "Guardando..." : "Crear Receta"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
