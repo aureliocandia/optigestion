@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Cliente } from "@/lib/types"
@@ -24,73 +25,77 @@ interface ClienteDialogProps {
   cliente?: Cliente | null
 }
 
+const emptyForm = {
+  nombre: "",
+  apellido: "",
+  cedula: "",
+  telefono: "",
+  email: "",
+  direccion: "",
+}
+
+// Genera código visible: últimos 3 dígitos de cédula o primeras 3 letras del apellido
+function generarCodigo(cedula: string, apellido: string): string {
+  if (cedula && cedula.replace(/\D/g, "").length >= 3) {
+    const nums = cedula.replace(/\D/g, "")
+    return `#${nums.slice(-3)}`
+  }
+  return `#${apellido.slice(0, 3).toUpperCase().padEnd(3, "X")}`
+}
+
 export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProps) {
   const isEditing = !!cliente
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  const [formData, setFormData] = useState({
-    nombre: cliente?.nombre || "",
-    apellido: cliente?.apellido || "",
-    cedula: cliente?.cedula || "",
-    telefono: cliente?.telefono || "",
-    email: cliente?.email || "",
-    direccion: cliente?.direccion || "",
-  })
+  const [formData, setFormData] = useState(emptyForm)
 
-  // Reset form when cliente changes
-  useState(() => {
-    if (cliente) {
-      setFormData({
-        nombre: cliente.nombre,
-        apellido: cliente.apellido,
-        cedula: cliente.cedula || "",
-        telefono: cliente.telefono || "",
-        email: cliente.email || "",
-        direccion: cliente.direccion || "",
-      })
-    } else {
-      setFormData({
-        nombre: "",
-        apellido: "",
-        cedula: "",
-        telefono: "",
-        email: "",
-        direccion: "",
-      })
+  // ✅ FIX punto 3: sincroniza correctamente cuando cambia el cliente
+  useEffect(() => {
+    if (open) {
+      setFormData(
+        cliente
+          ? {
+              nombre: cliente.nombre,
+              apellido: cliente.apellido,
+              cedula: cliente.cedula || "",
+              telefono: cliente.telefono || "",
+              email: cliente.email || "",
+              direccion: cliente.direccion || "",
+            }
+          : emptyForm
+      )
     }
-  })
+  }, [open, cliente])
+
+  const codigoPreview = generarCodigo(formData.cedula, formData.apellido)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
+      const payload = {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        cedula: formData.cedula || null,
+        telefono: formData.telefono || null,
+        email: formData.email || null,
+        direccion: formData.direccion || null,
+        codigo: codigoPreview, // guardamos el código en la BD
+        updated_at: new Date().toISOString(),
+      }
+
       if (isEditing && cliente) {
         const { error } = await supabase
           .from("clientes")
-          .update({
-            ...formData,
-            cedula: formData.cedula || null,
-            telefono: formData.telefono || null,
-            email: formData.email || null,
-            direccion: formData.direccion || null,
-            updated_at: new Date().toISOString(),
-          })
+          .update(payload)
           .eq("id", cliente.id)
-
         if (error) throw error
         toast.success("Cliente actualizado correctamente")
       } else {
-        const { error } = await supabase.from("clientes").insert({
-          ...formData,
-          cedula: formData.cedula || null,
-          telefono: formData.telefono || null,
-          email: formData.email || null,
-          direccion: formData.direccion || null,
-        })
-
+        const { error } = await supabase.from("clientes").insert(payload)
         if (error) throw error
         toast.success("Cliente creado correctamente")
       }
@@ -108,11 +113,17 @@ export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar Cliente" : "Nuevo Cliente"}
+            {/* Punto 1: muestra el código del cliente */}
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              {codigoPreview}
+            </span>
+          </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Modifica la informacion del cliente"
-              : "Completa los datos para registrar un nuevo cliente"}
+              ? "Modificá solo los campos que necesitás cambiar"
+              : "Completá los datos para registrar un nuevo cliente"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -138,15 +149,19 @@ export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProp
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cedula">Cedula</Label>
+              <Label htmlFor="cedula">
+                Cédula
+                <span className="ml-1 text-xs text-muted-foreground">(genera el código)</span>
+              </Label>
               <Input
                 id="cedula"
                 value={formData.cedula}
                 onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                placeholder="Ej: 4.567.890"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="telefono">Telefono</Label>
+              <Label htmlFor="telefono">Teléfono</Label>
               <Input
                 id="telefono"
                 value={formData.telefono}
@@ -155,7 +170,7 @@ export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProp
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Correo electronico</Label>
+            <Label htmlFor="email">Correo electrónico</Label>
             <Input
               id="email"
               type="email"
@@ -164,7 +179,7 @@ export function ClienteDialog({ open, onOpenChange, cliente }: ClienteDialogProp
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="direccion">Direccion</Label>
+            <Label htmlFor="direccion">Dirección</Label>
             <Textarea
               id="direccion"
               value={formData.direccion}

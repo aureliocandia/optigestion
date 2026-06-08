@@ -8,6 +8,7 @@ export interface Cliente {
   email: string | null
   created_at: string
   updated_at: string
+  codigo: string | null  
 }
 
 export interface Receta {
