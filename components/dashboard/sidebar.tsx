@@ -10,6 +10,7 @@ import {
   FileText,
   DollarSign,
   Glasses,
+  ShoppingCart,
 } from "lucide-react"
 
 interface DashboardSidebarProps {
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Clientes", href: "/dashboard/clientes", icon: Users },
   { name: "Recetas", href: "/dashboard/recetas", icon: FileText },
   { name: "Ventas", href: "/dashboard/ventas", icon: DollarSign },
+  { name: "Compras", href: "/dashboard/compras", icon: ShoppingCart },
 ]
 
 export function DashboardSidebar({ profile }: DashboardSidebarProps) {

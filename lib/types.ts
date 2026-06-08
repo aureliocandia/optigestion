@@ -59,3 +59,13 @@ export interface DashboardStats {
   ingresosMes: number
   cobranzaPendiente: number
 }
+export interface Compra {
+  id: string
+  proveedor: string
+  descripcion: string
+  monto: number
+  estado: 'pendiente' | 'pagado' | 'cancelado'
+  fecha: string
+  created_at: string
+  updated_at: string
+}
