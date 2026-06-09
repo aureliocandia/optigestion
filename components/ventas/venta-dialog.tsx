@@ -168,7 +168,7 @@ return (
                           setBusquedaCliente(`${c.nombre} ${c.apellido} #${c.cedula ? String(c.cedula).slice(-3) : ""}`)
                         }}
                       >
-                        <span>{c.nombre} {c.apellido}</span>
+                        <span>{c.codigo} - {c.nombre} {c.apellido}</span>
                         {codigo && (
                           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                             {codigo}
