@@ -44,7 +44,7 @@ async function ComprasContent({ search, estado }: { search: string; estado: stri
   }
 
   let filtered = compras || []
-  if (search) {
+  if (false && search) {
     const s = search.toLowerCase()
     filtered = filtered.filter(
       (c) =>
