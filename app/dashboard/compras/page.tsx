@@ -44,14 +44,14 @@ async function ComprasContent({ search, estado }: { search: string; estado: stri
   }
 
   let filtered = compras || []
-  if (false && search) {
+  if (search) {
     const s = search.toLowerCase()
-    filtered = filtered.filter(
-      (c) =>
-        c.proveedor.toLowerCase().includes(s) ||
-        c.descripcion.toLowerCase().includes(s)
-        (c.numero_factura || "").toLowerCase().includes(s)
-    )
+filtered = filtered.filter(
+  (c) =>
+    c.proveedor.toLowerCase().includes(s) ||
+    c.descripcion.toLowerCase().includes(s) ||
+    (c.numero_factura || "").toLowerCase().includes(s)
+)
   }
 
   return <ComprasTable compras={filtered} />
