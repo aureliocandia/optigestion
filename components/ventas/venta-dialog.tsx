@@ -62,11 +62,14 @@ export function VentaDialog({ open, onOpenChange, clientes }: VentaDialogProps) 
       const nombreCompleto = `${c.nombre} ${c.apellido}`.toLowerCase()
       const ultimos3 = (c.cedula || "").replace(/\D/g, "").slice(-3)
       const codigoCedula = ultimos3 ? `#${ultimos3}` : ""
-      return (
-        nombreCompleto.includes(q) ||
-        codigoCedula.toLowerCase().includes(q) ||
-        ultimos3.includes(q) // ✅ buscar "909" sin el #
-      )
+const codigoCliente = (c.id || "").toLowerCase()
+
+return (
+  nombreCompleto.includes(q) ||
+  codigoCedula.toLowerCase().includes(q) ||
+  ultimos3.includes(q) ||
+  codigoCliente.includes(q)
+)
     })
   }, [clientes, busquedaCliente])
 
