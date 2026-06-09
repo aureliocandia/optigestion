@@ -53,7 +53,8 @@ export function RecetaDialog({ open, onOpenChange, clientes }: RecetaDialogProps
     return clientes.filter((c) => {
       const nombre = `${c.nombre} ${c.apellido}`.toLowerCase()
       const codigo = c.cedula ? `#${c.cedula.replace(/\D/g, "").slice(-3)}` : ""
-      return nombre.includes(q) || codigo.toLowerCase().includes(q)
+      const codigoCliente = (c.codigo || "").toLowerCase()
+      return nombre.includes(q) || codigoCliente.toLowerCase().includes(q)
     })
   }, [clientes, busqueda])
 
