@@ -137,7 +137,7 @@ export function RecetaDialog({ open, onOpenChange, clientes }: RecetaDialogProps
                           setBusqueda(`${c.nombre} ${c.apellido}`)
                         }}
                       >
-                        <span>{c.nombre} {c.apellido}</span>
+                        <span>{c.codigo} - {c.nombre} {c.apellido}</span>
                         {codigo && (
                           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{codigo}</span>
                         )}
