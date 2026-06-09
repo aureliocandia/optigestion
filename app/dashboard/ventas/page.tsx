@@ -14,9 +14,9 @@ export default async function VentasPage({ searchParams }: VentasPageProps) {
   const estado = params.estado || ""
 
   const supabase = await createClient()
-  const { data: clientes } = await supabase
-    .from("clientes")
-    .select("id, nombre, apellido")
+const { data: clientes } = await supabase
+  .from("clientes")
+  .select("id, codigo, nombre, apellido")
     .order("nombre")
 
   return (

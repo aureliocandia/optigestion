@@ -16,7 +16,7 @@ export default async function RecetasPage({ searchParams }: RecetasPageProps) {
   const supabase = await createClient()
   const { data: clientes } = await supabase
     .from("clientes")
-    .select("id, nombre, apellido")
+    .select("id, codigo, nombre, apellido")
     .order("nombre")
 
   return (

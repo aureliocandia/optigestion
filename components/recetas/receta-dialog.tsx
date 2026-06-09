@@ -20,6 +20,7 @@ import { toast } from "sonner"
 
 interface ClienteOption {
   id: string
+  codigo?: string | null
   nombre: string
   apellido: string
   cedula?: string | null

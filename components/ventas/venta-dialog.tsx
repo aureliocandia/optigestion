@@ -28,6 +28,7 @@ import { toast } from "sonner"
 
 interface ClienteOption {
   id: string
+  codigo?: string | null
   nombre: string
   apellido: string
   cedula?: string | null
@@ -62,7 +63,7 @@ export function VentaDialog({ open, onOpenChange, clientes }: VentaDialogProps) 
       const nombreCompleto = `${c.nombre} ${c.apellido}`.toLowerCase()
       const ultimos3 = (c.cedula || "").replace(/\D/g, "").slice(-3)
       const codigoCedula = ultimos3 ? `#${ultimos3}` : ""
-const codigoCliente = (c.id || "").toLowerCase()
+      const codigoCliente = (c.codigo || "").toLowerCase()
 
 return (
   nombreCompleto.includes(q) ||
