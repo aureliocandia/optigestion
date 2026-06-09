@@ -163,7 +163,7 @@ export function VentaDialog({ open, onOpenChange, clientes }: VentaDialogProps) 
                         className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent transition-colors text-left"
                         onClick={() => {
                           setFormData({ ...formData, cliente_id: c.id })
-                          setBusquedaCliente(`${c.nombre} ${c.apellido}`)
+                          setBusquedaCliente(`${c.nombre} ${c.apellido} #${c.cedula?.replace(/\D/g, "").slice(-3) || ""}`)
                         }}
                       >
                         <span>{c.nombre} {c.apellido}</span>
