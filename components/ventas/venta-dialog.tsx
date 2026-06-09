@@ -67,8 +67,6 @@ export function VentaDialog({ open, onOpenChange, clientes }: VentaDialogProps) 
 
 return (
   nombreCompleto.includes(q) ||
-  codigoCedula.toLowerCase().includes(q) ||
-  ultimos3.includes(q) ||
   codigoCliente.includes(q)
 )
     })
